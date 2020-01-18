@@ -38,6 +38,10 @@ const userSchema = mongoose.Schema({
   resetPasswordLink: {
     data: String,
     default: ""
+  },
+  role: {
+    type: String,
+    default: "subscriber"
   }
 });
 

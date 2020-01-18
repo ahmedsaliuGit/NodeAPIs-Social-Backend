@@ -35,13 +35,16 @@ exports.signin = (req, res) => {
       });
     }
     // generate token with user id and token secret
-    const token = jwt.sign({ _id: user._id }, process.env.JWT_SECRET);
+    const token = jwt.sign(
+      { _id: user._id, role: user.role },
+      process.env.JWT_SECRET
+    );
     // persist as 't' in the cookies with expiry date
     res.cookie;
     "t", token, { expire: new Date() + 9999 };
     // return response with user and token for the client
-    const { _id, email, name } = user;
-    return res.json({ user: { _id, email, name }, token });
+    const { _id, email, name, role } = user;
+    return res.json({ user: { _id, email, name, role }, token });
   });
 };
 

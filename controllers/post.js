@@ -5,7 +5,7 @@ const _ = require("lodash");
 
 exports.postById = (req, res, next, id) => {
   Post.findById(id)
-    .populate("postedBy", "_id name")
+    .populate("postedBy", "_id name role")
     .populate("comments.postedBy", "_id name")
     .exec((err, post) => {
       if (err || !post) {
@@ -17,13 +17,27 @@ exports.postById = (req, res, next, id) => {
     });
 };
 
-exports.getPosts = (req, res) => {
+exports.getPosts = async (req, res) => {
   //   res.send("Hello from express app Nodemon, controller in action");
-  const posts = Post.find()
-    .populate("postedBy", "_id name")
-    .populate("comments.postedBy", "_id name")
-    .select("_id title body likes created comments")
-    .sort({ created: -1 })
+  // get current page from req.query or use default value of 1
+  const currentPage = req.query.page || 1;
+
+  // return 3 posts per page
+  const perPage = 3;
+  let totalItems;
+
+  const posts = await Post.find()
+    .countDocuments()
+    .then(count => {
+      totalItems = count;
+      return Post.find()
+        .skip((currentPage - 1) * perPage)
+        .populate("postedBy", "_id name role")
+        .populate("comments.postedBy", "_id name")
+        .sort({ created: -1 })
+        .limit(perPage)
+        .select("_id title body likes created comments");
+    })
     .then(posts => {
       res.json(posts);
     })
@@ -63,7 +77,7 @@ exports.createPost = (req, res) => {
 
 exports.postsByUser = (req, res) => {
   Post.find({ postedBy: req.profile._id })
-    .populate("postedBy", "_id name")
+    .populate("postedBy", "_id name role")
     .select("_id title body likes created")
     .sort({ created: -1 })
     .exec((err, posts) => {
@@ -76,7 +90,13 @@ exports.postsByUser = (req, res) => {
 };
 
 exports.isPoster = (req, res, next) => {
-  let isPoster = req.post && req.auth && req.post.postedBy._id == req.auth._id;
+  let owner = req.post && req.auth && req.post.postedBy._id == req.auth._id;
+  let adminUser = req.post && req.auth && req.auth.role == "admin";
+
+  let isPoster = owner || adminUser;
+  console.log("req.auuth ", req.auth, " req.post", req.post);
+  console.log("OWNER::", owner, " ADMINUSER:: ", adminUser);
+
   if (!isPoster) {
     return res.status(403).json({ error: "User is not authorized" });
   }
