@@ -22,13 +22,13 @@ exports.getPosts = async (req, res) => {
   // get current page from req.query or use default value of 1
   const currentPage = req.query.page || 1;
 
-  // return 3 posts per page
-  const perPage = 3;
+  // return posts per page or 3
+  const perPage = req.query.perPage ? parseInt(req.query.perPage) : 3;
   let totalItems;
 
   const posts = await Post.find()
     .countDocuments()
-    .then(count => {
+    .then((count) => {
       totalItems = count;
       return Post.find()
         .skip((currentPage - 1) * perPage)
@@ -38,10 +38,10 @@ exports.getPosts = async (req, res) => {
         .limit(perPage)
         .select("_id title body likes created comments");
     })
-    .then(posts => {
+    .then((posts) => {
       res.json(posts);
     })
-    .catch(error => console.log(error));
+    .catch((error) => console.log(error));
 };
 
 exports.singlePost = (req, res) => {
@@ -140,7 +140,7 @@ exports.updatePost = (req, res, next) => {
       if (err) {
         return res.status(400).json({
           error: "Error updating the post profile",
-          err
+          err,
         });
       }
 
